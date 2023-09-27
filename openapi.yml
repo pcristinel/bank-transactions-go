@@ -1,0 +1,221 @@
+openapi: 3.0.3
+info:
+  title: Bank Transactions API migrated from Java+Spring to Go
+  description: This is a sample project based on the Bank Transactions API that has been done for an interview at a bank. The original project was done in Java+Spring and this is a migration to Go.
+  version: 1.0.0
+  contact:
+    name: Cristinel Pavel Alergus
+    email: cristinelpavelalergus@gmail.com
+
+servers:
+  - url: http://localhost:8080
+    description: Local server
+
+paths:
+  /api/v1/transactions:
+    summary: Manage transactions
+    post:
+      tags:
+        - transactions
+      summary: Create a new transaction
+      operationId: createTransaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionDTO'
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: Location of the created transaction
+              schema:
+                type: string
+                format: uri
+                example: http://localhost:8080/api/v1/transactions/559cd90e-64d6-4dd0-88b9-3a04aa30d671
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponseDTO'
+    get:
+      tags:
+        - transactions
+      summary: Search transactions
+      operationId: searchTransactions
+      parameters:
+        - name: search
+          in: query
+          description: Field you want to search for. If you need to search for multiple fields, separate them with comma.
+          required: true
+          schema:
+            type: string
+            example: account_iban:ES9820385778983000760236,date:2019-07-16
+        - name: sort
+          in: query
+          description: Field you want to sort for.
+          schema:
+            type: string
+            example: amount:desc
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransactionResponseDTO'
+        204:
+          description: No Content for the values provided
+        400:
+          description: Bad Request
+        404:
+          description: Not Found
+  # Should this endpoint not exist? Should we use the search endpoint instead?
+  /api/v1/transactions/status:
+    summary: Get the status of the transactions
+    get:
+      tags:
+        - transactions
+      summary: Get the status of the transactions by reference
+      operationId: getTransactionsStatus
+      parameters:
+        - name: reference
+          in: query
+          description: The transaction reference number
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 606c95c6-10ee-4fb7-8f33-a544c554920b
+        - name: channel
+          in: query
+          description: The type of the channel that is asking for the status.
+          schema:
+            type: string
+            enum:
+            - CLIENT
+            - ATM
+            - INTERNAL
+            example: CLIENT
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionStatusResponseDTO'
+        204:
+          description: No Content for the values provided
+        400:
+          description: Bad Request
+        404:
+          description: Not Found
+
+components:
+  schemas:
+    CreateTransactionDTO:
+      description: Transaction request object
+      type: object
+      properties:
+        account_iban:
+          description: The destination account IBAN
+          type: string
+          example: ES9820385778983000760236
+        date:
+          description: Date when the transaction took place
+          type: string
+          format: date-time
+          example: 2019-07-16T16:55:42.000Z
+        amount:
+          description: >
+            The amount of money that was transferred. If positive the transaction is a credit (add money) to the account. If negative it is a debit (deduct money from the account)
+          type: number
+          format: double
+          example: 193.38
+        fee:
+          description: > 
+            Fee that will be deducted from the amount, regardless on the amount being positive or negative.
+          type: number
+          format: double
+          example: 3.18
+        description:
+          description: Description of the transaction
+          type: string
+          example: Restaurant payment
+      required:
+        - account_iban
+        - amount
+
+    TransactionResponseDTO:
+      type: object
+      properties:
+        reference:
+          description: Unique reference of the transaction
+          type: string
+          format: uuid
+          example: 606c95c6-10ee-4fb7-8f33-a544c554920b
+        account_iban:
+          description: The destination account IBAN
+          type: string
+          example: ES9820385778983000760236
+        date:
+          description: Date when the transaction took place
+          type: string
+          format: date-time
+          example: 2019-07-16T16:55:42.000Z
+        amount:
+          description: >
+            The amount of money that was transferred. If positive the transaction is a credit (add money) to the account. If negative it is a debit (deduct money from the account)
+          type: number
+          format: double
+          example: 193.38
+        fee:
+          description: >
+            Fee that will be deducted from the amount, regardless on the amount being positive or negative.
+          type: number
+          format: double
+          example: 3.18
+        description:
+          description: Description of the transaction
+          type: string
+          example: Restaurant payment
+      required:
+        - reference
+        - account_iban
+        - date
+        - amount
+
+    TransactionStatusResponseDTO:
+      type: object
+      properties:
+        reference:
+          description: Unique reference of the transaction
+          type: string
+          format: uuid
+          example: 606c95c6-10ee-4fb7-8f33-a544c554920b
+        status:
+          description: Status of the transaction
+          type: string
+          enum:
+            - PENDING
+            - SETTLED
+            - FUTURE
+            - INVALID
+          example: PENDING
+        amount:
+          description: the amount of the transaction
+          type: number
+          format: double
+          example: 193.38
+        fee:
+          description: The fee applied to the transaction
+          type: number
+          format: double
+          example: 3.18
+      required:
+        - reference
+
+# TODO: Add examples
+# TODO: Add security
